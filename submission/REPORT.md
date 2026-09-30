@@ -117,8 +117,8 @@
   - Dòng log: `{"service": "api", "latency_ms": 4134, "ttft_ms": 50, "tokens_in": 35, "tokens_out": 99, "cost_usd": 0.00159, "quality_score": 0.8, "tool_name": "retrieval", "tool_success": true, "event": "response_sent", "correlation_id": "req-087e8cb3"}`
   - `correlation_id`: `req-087e8cb3`
 - **Trace ID và span gây ảnh hưởng:**
-  - Trace ID: `req-087e8cb3`
-  - Span gây ảnh hưởng: Span **`retrieval`** bị kéo dài bất thường hơn **2.5 giây**.
+  - Trace ID: `dfdc210809946829248a44e808cdc389` (tương ứng `correlation_id: req-087e8cb3`)
+  - Span gây ảnh hưởng: Span **`retrieval`** bị kéo dài bất thường hơn **2.50 giây** (chiếm 2.50s / 4.13s tổng thời gian xử lý của agent).
 - **Root cause:** Kịch bản sự cố `rag_slow` được kích hoạt khiến hàm tìm kiếm vector retrieval bị sleep/chậm 2.5s trên mỗi truy vấn tài liệu, làm tổng thời gian phản hồi của agent vượt quá 4 giây.
 - **Fix action:** Tắt sự cố bằng lệnh `POST /incidents/rag_slow/disable`, kiểm tra và tái khởi động kết nối cơ sở dữ liệu vector.
 - **Preventive measure:** Bổ sung cơ chế Timeout & Circuit Breaker cho module retrieval (nếu quá 1.5s chưa có kết quả thì tự động chuyển sang fallback thay vì treo cả request), đồng thời kích hoạt cảnh báo `HighLatencyP95` qua kênh Slack để đội trực SRE can thiệp ngay.
