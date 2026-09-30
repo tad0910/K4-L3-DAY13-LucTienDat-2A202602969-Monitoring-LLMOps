@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K4-L3B Day 13 Monitoring & LLMOps Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --accent-purple: #bc8cff;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 24px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .header-title h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #f0f6fc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .badge-live {
+            background: rgba(63, 185, 80, 0.2);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-live::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .header-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .header-meta span {
+            background: var(--card-bg);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 16px;
+        }
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .kpi-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #f0f6fc;
+        }
+        .kpi-sub {
+            font-size: 11px;
+            color: var(--accent-green);
+            margin-top: 4px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+        .panel-threshold {
+            font-size: 11px;
+            color: var(--accent-orange);
+            background: rgba(210, 153, 34, 0.15);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(210, 153, 34, 0.3);
+        }
+        .chart-container {
+            position: relative;
+            height: 230px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">
+            <h1>K4-L3B Day 13 Monitoring & LLMOps Dashboard <span class="badge-live">LIVE</span></h1>
+        </div>
+        <div class="header-meta">
+            <span>👤 Học viên: <strong>Lục Tiến Đạt (2A202602969)</strong></span>
+            <span>⏱️ Time Range: <strong>60 Minutes</strong></span>
+            <span>🔄 Refresh: <strong>30s</strong></span>
+        </div>
+    </header>
+
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Requests</div>
+            <div class="kpi-value">25</div>
+            <div class="kpi-sub">Events: request_received</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Latency P95</div>
+            <div class="kpi-value">2652.0 ms</div>
+            <div class="kpi-sub">SLO target: &le; 3000ms</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Error Rate</div>
+            <div class="kpi-value">0.0%</div>
+            <div class="kpi-sub">Threshold: &le; 2.0%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Retrieval Success</div>
+            <div class="kpi-value">100.0%</div>
+            <div class="kpi-sub">Threshold: &ge; 90.0%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Total Cost</div>
+            <div class="kpi-value">$0.0536</div>
+            <div class="kpi-sub">Budget: &le; $2.50</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Avg Quality</div>
+            <div class="kpi-value">0.87</div>
+            <div class="kpi-sub">Threshold: &ge; 0.75</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- 1. Latency Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">1. Latency percentiles & TTFT (ms)</span>
+                <span class="panel-threshold">Threshold: P95 &le; 3000 ms</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartLatency"></canvas>
+            </div>
+        </div>
+
+        <!-- 2. Traffic Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">2. Request Traffic (requests/min)</span>
+                <span class="panel-threshold">Threshold: Rate &ge; 1 req/min</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartTraffic"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Errors Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">3. Error Rate & Retrieval Success (%)</span>
+                <span class="panel-threshold">Threshold: Error &le; 2% | Retrieval &ge; 90%</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartErrors"></canvas>
+            </div>
+        </div>
+
+        <!-- 4. Cost Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">4. Cost over time (USD)</span>
+                <span class="panel-threshold">Threshold: Total &le; $2.50</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartCost"></canvas>
+            </div>
+        </div>
+
+        <!-- 5. Tokens Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">5. Input & Output Tokens (sum)</span>
+                <span class="panel-threshold">Threshold: Total &le; 50,000 tokens</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartTokens"></canvas>
+            </div>
+        </div>
+
+        <!-- 6. Quality Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">6. Quality Proxy (score 0.0 - 1.0)</span>
+                <span class="panel-threshold">Threshold: Mean &ge; 0.75</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartQuality"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const labels = ["02:37", "02:52", "02:53", "02:54", "03:51", "03:52"];
+        const chartOptions = (unit, thresholdVal, thresholdText, isGte = false) => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#c9d1d9', font: { size: 11 } } },
+                tooltip: { backgroundColor: '#21262d', titleColor: '#f0f6fc', bodyColor: '#c9d1d9', borderColor: '#30363d', borderWidth: 1 }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#8b949e', font: { size: 10 } } },
+                y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#8b949e', font: { size: 10 } }, title: { display: true, text: unit, color: '#8b949e', font: { size: 10 } } }
+            }
+        });
+
+        // 1. Latency Chart
+        new Chart(document.getElementById('chartLatency'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'P95 Latency', data: [1031.3, 0, 0, 1024.7, 0, 3837.6], borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,0.1)', tension: 0.2 },
+                    { label: 'P50 Latency', data: [422.5, 0, 0, 430.5, 0, 2652.0], borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.1)', tension: 0.2 },
+                    { label: 'P99 Latency', data: [1371.9, 0, 0, 1386.6, 0, 4074.7], borderColor: '#bc8cff', borderDash: [4, 4], tension: 0.2 },
+                    { label: 'TTFT P95', data: [50.0, 0, 0, 50.0, 0, 50.0], borderColor: '#d29922', tension: 0.2 },
+                    { label: 'Threshold (3000ms)', data: labels.map(() => 3000), borderColor: '#f85149', borderDash: [6, 6], pointRadius: 0, fill: false }
+                ]
+            },
+            options: chartOptions('Milliseconds (ms)', 3000, 'Threshold 3000ms')
+        });
+
+        // 2. Traffic Chart
+        new Chart(document.getElementById('chartTraffic'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Requests / min', data: [10, 0, 0, 10, 1, 4], backgroundColor: '#58a6ff', borderRadius: 4 },
+                    { type: 'line', label: 'Threshold (1 req/min)', data: labels.map(() => 1), borderColor: '#d29922', borderDash: [6, 6], pointRadius: 0 }
+                ]
+            },
+            options: chartOptions('Requests/min', 1, 'Min 1 req/min')
+        });
+
+        // 3. Errors & Retrieval Chart
+        new Chart(document.getElementById('chartErrors'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Retrieval Success %', data: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0], borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.1)', tension: 0.2 },
+                    { label: 'Error Rate %', data: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,0.1)', tension: 0.2 },
+                    { label: 'Error Threshold (2%)', data: labels.map(() => 2), borderColor: '#f85149', borderDash: [6, 6], pointRadius: 0 }
+                ]
+            },
+            options: chartOptions('Percentage (%)', 2, 'Threshold 2%')
+        });
+
+        // 4. Cost Chart
+        new Chart(document.getElementById('chartCost'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Cumulative Cost ($)', data: [0.02077, 0.02077, 0.02077, 0.04283, 0.04283, 0.05361], borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.15)', fill: true, tension: 0.2 },
+                    { label: 'Cost / min ($)', data: [0.02077, 0.0, 0.0, 0.02206, 0.0, 0.01078], borderColor: '#58a6ff', borderDash: [3, 3], tension: 0.2 },
+                    { label: 'Threshold ($2.50)', data: labels.map(() => 2.50), borderColor: '#d29922', borderDash: [6, 6], pointRadius: 0 }
+                ]
+            },
+            options: chartOptions('USD ($)', 2.5, 'Threshold $2.50')
+        });
+
+        // 5. Tokens Chart
+        new Chart(document.getElementById('chartTokens'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Tokens In', data: [338, 0, 0, 338, 0, 175], backgroundColor: '#58a6ff', stack: 'tokens' },
+                    { label: 'Tokens Out', data: [1317, 0, 0, 1403, 0, 684], backgroundColor: '#bc8cff', stack: 'tokens' },
+                    { type: 'line', label: 'Threshold (50k)', data: labels.map(() => 50000), borderColor: '#f85149', borderDash: [6, 6], pointRadius: 0 }
+                ]
+            },
+            options: chartOptions('Tokens', 50000, 'Threshold 50,000')
+        });
+
+        // 6. Quality Chart
+        new Chart(document.getElementById('chartQuality'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Quality Proxy', data: [0.88, 0.85, 0.85, 0.88, 0.85, 0.84], borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.1)', tension: 0.2 },
+                    { label: 'Threshold (0.75)', data: labels.map(() => 0.75), borderColor: '#d29922', borderDash: [6, 6], pointRadius: 0 }
+                ]
+            },
+            options: chartOptions('Score (0.0 - 1.0)', 0.75, 'Min 0.75')
+        });
+
+        // Auto refresh every 30s
+        setTimeout(() => { window.location.reload(); }, 30000);
+    </script>
+</body>
+</html>
